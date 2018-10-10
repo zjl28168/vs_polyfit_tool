@@ -60,11 +60,11 @@ namespace WindowsFormsApp1
         private void button1_Click(object sender, EventArgs e)
         {
             string waypoint_info = null;
-            string file_name = null;
+            //string file_name = null;
             string waypoint_trkpt = null;
             string waypoint_time = null;
             string waypoint_ele = null;
-            bool new_file_is_creat = false;
+            //bool new_file_is_creat = false;
             OpenFileDialog dialog  = new OpenFileDialog();
             dialog.Filter = "gpx文件|*.gpx";
             if (dialog.ShowDialog() == DialogResult.OK && null != dialog.FileName)
@@ -88,7 +88,12 @@ namespace WindowsFormsApp1
             {
                 if (readerXml.NodeType == XmlNodeType.Element)
                 {
-                    if ("trkpt" == readerXml.Name )
+                    if ("desc" == readerXml.Name)
+                    {
+                        waypoint_info = readerXml.ReadString().Trim() + "\n";
+                        m_streamWriter.Write(waypoint_info);
+                    }
+                    else if ("trkpt" == readerXml.Name )
                     {
                         waypoint_trkpt = readerXml.GetAttribute("lat") + "\t" + readerXml.GetAttribute("lon");
                     }
@@ -102,7 +107,7 @@ namespace WindowsFormsApp1
                         if( waypoint_time != null && waypoint_trkpt != null && waypoint_ele != null)
                         {
                             waypoint_info = waypoint_time + "\t" + waypoint_trkpt + "\t" + waypoint_ele + "\n";
-                            m_streamWriter.Write(waypoint_info);
+                            m_streamWriter.Write( waypoint_info );
                         }
                     }
                 }
@@ -114,7 +119,7 @@ namespace WindowsFormsApp1
             System.Diagnostics.Process.Start(new_file_path);
         }
 
-        private void button3_Click_1(object sender, EventArgs e)
+        private void button4_Click(object sender, EventArgs e)
         {
             OpenFileDialog dialog = new OpenFileDialog();
             dialog.Filter = "txt文件|*.txt";
@@ -127,30 +132,13 @@ namespace WindowsFormsApp1
                 MessageBox.Show("文件路径无效！");
                 return;
             }
-        }
-
-        private void button2_Click_1(object sender, EventArgs e)
-        {
-            OpenFileDialog dialog = new OpenFileDialog();
-            dialog.Filter = "gpx文件|*.gpx";
-            if (dialog.ShowDialog() == DialogResult.OK && null != dialog.FileName)
-            {
-                textBox2.Text = dialog.FileName;
-            }
-            else
-            {
-                MessageBox.Show("文件路径无效！");
-                return;
-            }
-        }
-        private void button4_Click(object sender, EventArgs e)
-        {
-            string waypoint_trkpt_lat = null;
-            string waypoint_trkpt_lon = null;
+            //string waypoint_trkpt_lat = null;
+            // string waypoint_trkpt_lon = null;
             string[] txt_line_string_arry = new string[4];
-            string txt_line_string ;
+            string txt_line_string = null;
+            string desc_gpx = null;
             StreamReader fs = new StreamReader(textBox3.Text, Encoding.Default);
-            string new_file_path = Path.GetDirectoryName(textBox2.Text) + "\\" + Path.GetFileNameWithoutExtension(textBox2.Text) + "_new.gpx";
+            string new_file_path = Path.GetDirectoryName(textBox3.Text) + "\\" + Path.GetFileNameWithoutExtension(textBox3.Text) + ".gpx";
             //StreamReader m_streamWriter = new StreamReader(fs);
             XmlTextWriter writeXml = new XmlTextWriter(new_file_path, Encoding.UTF8);
             writeXml.WriteStartDocument(false);
@@ -172,50 +160,112 @@ namespace WindowsFormsApp1
             writeXml.WriteStartElement("trk");
             writeXml.WriteWhitespace("\n");
             writeXml.WriteWhitespace("  ");
-            writeXml.WriteElementString("name", Path.GetFileNameWithoutExtension(textBox2.Text) + "_new");
+            writeXml.WriteElementString("name", Path.GetFileNameWithoutExtension(textBox3.Text));
             writeXml.WriteWhitespace("\n");
-            XmlTextReader readerXml = new XmlTextReader(textBox2.Text);
 
-            while (readerXml.Read())
-            {
-                if (readerXml.NodeType == XmlNodeType.Element )
+            //XmlTextReader readerXml = new XmlTextReader(textBox2.Text);
+
+            txt_line_string = fs.ReadLine();
+            if(txt_line_string.IndexOf("Area: ")> -1)
                 {
-                    if("desc" == readerXml.Name)
-                    {
-                        writeXml.WriteWhitespace("  ");
-                        writeXml.WriteElementString("desc", readerXml.ReadString().Trim());
-                        writeXml.WriteWhitespace("\n");
-                        writeXml.WriteWhitespace("  ");
-                        writeXml.WriteStartElement("trkseg");
-                        writeXml.WriteWhitespace("\n");
-                    }
-                    if ("trkpt" == readerXml.Name)
-                    {
-                        txt_line_string = fs.ReadLine();
-                        txt_line_string_arry = txt_line_string.Split('\t');
-                        writeXml.WriteWhitespace("   ");
-                        writeXml.WriteStartElement("trkpt");
-                        writeXml.WriteAttributeString("lat", txt_line_string_arry[1]);
-                        writeXml.WriteAttributeString("lon", txt_line_string_arry[2]);
-                        writeXml.WriteWhitespace("\n");
-                    }
-                    else if ("ele" == readerXml.Name)
-                    {
-                        writeXml.WriteWhitespace("    ");
-                        writeXml.WriteElementString("ele", txt_line_string_arry[3]);
-                        writeXml.WriteWhitespace("\n");
-                    }
-                    else if ("time" == readerXml.Name)
-                    {
-                        writeXml.WriteWhitespace("    ");
-                        writeXml.WriteElementString("time", txt_line_string_arry[0]);
-                        writeXml.WriteWhitespace("\n");
-                        writeXml.WriteWhitespace("   ");
-                        writeXml.WriteEndElement();//trkpt
-                        writeXml.WriteWhitespace("\n");
-                    }
+                desc_gpx = txt_line_string + "\n";
+                txt_line_string = fs.ReadLine();
                 }
+
+            if (txt_line_string.IndexOf("Length: ") > -1)
+            {
+                desc_gpx += txt_line_string + "\n";
+                txt_line_string = fs.ReadLine();
             }
+
+            if (txt_line_string.IndexOf("Circumference: ") > -1)
+            {
+                desc_gpx += txt_line_string;
+                txt_line_string = fs.ReadLine();
+            }
+
+            if (txt_line_string.IndexOf("Angle: ") > -1)
+            {
+                desc_gpx += txt_line_string;
+                txt_line_string = fs.ReadLine();
+            }
+
+            writeXml.WriteWhitespace("  ");
+            writeXml.WriteElementString("desc", desc_gpx );
+            writeXml.WriteWhitespace("\n");
+            writeXml.WriteWhitespace("  ");
+            writeXml.WriteStartElement("trkseg");
+            writeXml.WriteWhitespace("\n");
+
+
+ //           txt_line_string = fs.ReadLine();
+            while ( txt_line_string !=null )
+                {
+                txt_line_string_arry = txt_line_string.Split('\t');
+                writeXml.WriteWhitespace("   ");
+                writeXml.WriteStartElement("trkpt");
+                writeXml.WriteAttributeString("lat", txt_line_string_arry[1]);
+                writeXml.WriteAttributeString("lon", txt_line_string_arry[2]);
+                writeXml.WriteWhitespace("\n");
+
+                writeXml.WriteWhitespace("    ");
+                writeXml.WriteElementString("ele", txt_line_string_arry[3]);
+                writeXml.WriteWhitespace("\n");
+
+                writeXml.WriteWhitespace("    ");
+                writeXml.WriteElementString("time", txt_line_string_arry[0]);
+                writeXml.WriteWhitespace("\n");
+                writeXml.WriteWhitespace("   ");
+                writeXml.WriteEndElement();//trkpt
+                writeXml.WriteWhitespace("\n");
+
+                txt_line_string = fs.ReadLine();
+
+                }
+
+            //            XmlTextReader readerXml = new XmlTextReader(textBox2.Text);
+            /*
+                        while (readerXml.Read())
+                        {
+                            if (readerXml.NodeType == XmlNodeType.Element )
+                            {
+                                if("desc" == readerXml.Name)
+                                {
+                                    writeXml.WriteWhitespace("  ");
+                                    writeXml.WriteElementString("desc", readerXml.ReadString().Trim());
+                                    writeXml.WriteWhitespace("\n");
+                                    writeXml.WriteWhitespace("  ");
+                                    writeXml.WriteStartElement("trkseg");
+                                    writeXml.WriteWhitespace("\n");
+                                }
+                                if ("trkpt" == readerXml.Name)
+                                {
+                                    txt_line_string = fs.ReadLine();
+                                    txt_line_string_arry = txt_line_string.Split('\t');
+                                    writeXml.WriteWhitespace("   ");
+                                    writeXml.WriteStartElement("trkpt");
+                                    writeXml.WriteAttributeString("lat", txt_line_string_arry[1]);
+                                    writeXml.WriteAttributeString("lon", txt_line_string_arry[2]);
+                                    writeXml.WriteWhitespace("\n");
+                                }
+                                else if ("ele" == readerXml.Name)
+                                {
+                                    writeXml.WriteWhitespace("    ");
+                                    writeXml.WriteElementString("ele", txt_line_string_arry[3]);
+                                    writeXml.WriteWhitespace("\n");
+                                }
+                                else if ("time" == readerXml.Name)
+                                {
+                                    writeXml.WriteWhitespace("    ");
+                                    writeXml.WriteElementString("time", txt_line_string_arry[0]);
+                                    writeXml.WriteWhitespace("\n");
+                                    writeXml.WriteWhitespace("   ");
+                                    writeXml.WriteEndElement();//trkpt
+                                    writeXml.WriteWhitespace("\n");
+                                }
+                            }
+                        }
+                        */
             writeXml.WriteWhitespace("  ");
             writeXml.WriteEndElement();//trkseg
             writeXml.WriteWhitespace("\n");
@@ -229,7 +279,7 @@ namespace WindowsFormsApp1
             writeXml.Flush();
             writeXml.Close();
 
-            readerXml.Close();
+            //readerXml.Close();
             fs.Close();
 
             //m_streamWriter.Flush();
